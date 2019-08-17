@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>A C C O U N T Reference Data </title>
+  </head>
+  <body style="margin-left: 10px; margin-right: 10px">
+    <h1>A C C O U N T Reference Data</h1>
+    <hr/>
+    <div id="accountCount">Current account count: 0</div>
+    <div id="message" style='color:blue'>
+    </div>     
+    
+    <hr/>
+    <div>Add a new account or search:</div>
+    <form id="createAccountForm">
+    <table>
+        <tr>
+            <td>Account Number: </td>
+            <td><input type="text" id="newAccountNumber"/> </td>
+        </tr>
+        
+        <tr>
+            
+            <td>Short Name: </td>
+            <td><input type="text" id="newAccountShortName"/>  </td>
+        </tr>
+        <tr>
+                <td>Legal Entity: </td>
+                <td><input type="text" id="newAccountLE"/>  </td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                    <input type="button" value="Create" onclick="createAccount()"/>
+                    <input type="button" value="Search" onclick="searchAccounts()"/>
+            </td>
+        </tr>
+    </table>
+    </form>
+    <hr/>
+    Create accounts in bulk, enter count: <input type="text" id="newCount"> 
+    <input type="button" value="Create Bulk Accounts" onclick="createAccounts()">
+    <input type="button" value="Delete all" onclick="deleteAccounts()"> 
+    
+    <hr/>
+    Account Details:
+    <div id="currentAccounts">
+        <table id="table">
+            <tr>
+                <th>Account Number</th>
+                <th>Account Short Name</th>
+                <th>Account LE</th>
+            </tr>
+        </table>
+    </div>
+    <script language="JavaScript">
+
+        class Account{
+            constructor(accountNumber, accountShortName, accountLE){
+                this.accountNumber=accountNumber;
+                this.accountShortName=accountShortName;
+                this.accountLE=accountLE;
+            }     
+        }
+
+        var id = 100;
+
+        makeRequest('/accounts');
+        
+        function makeRequest(target){
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState == XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
+                if (xmlhttp.status == 200) {
+                    
+                    //alert(xmlhttp.responseText);
+                    
+                    if(target=='/accounts'){
+                        var rowIndex=0;
+                        document.getElementById("currentAccounts").innerHTML="";
+                        document.getElementById("currentAccounts").innerHTML='<table id="table"> <tr> <th>Account Number</th> <th>Account Short Name</th> <th>Account LE</th> </tr>  </table>';
+                        table=document.getElementById('table');
+                        JSON.parse(xmlhttp.responseText).forEach(function(value, index){
+                            var row = table.insertRow(rowIndex+1);
+                            var accountNumber = row.insertCell(0);
+                            var accountShortName = row.insertCell(1);
+                            var accountLE = row.insertCell(2);
+
+                            accountNumber.innerHTML=value.accountNumber;
+                            accountShortName.innerHTML=value.accountShortName;
+                            accountLE.innerHTML=value.accountLE;
+                            rowIndex=rowIndex+1;
+                        });
+                        document.getElementById('accountCount').innerHTML='Current account count: '+rowIndex;
+                    }else{ 
+                        document.getElementById('message').innerHTML=xmlhttp.responseText;
+                        //setMessageTimer();    
+                        if(target=='/createAccount' || target=='/deleteAccounts'){
+                            //refresh the display
+                            makeRequest('/accounts');        
+                        }           
+                    }
+                }
+                else if (xmlhttp.status == 400) {
+                    alert('There was an error 400');
+                }
+                else {
+                    alert('something else other than 200 was returned');
+                }
+                }
+            };
+
+            if(target=='/accounts'){
+                xmlhttp.open("GET", target, true);
+                xmlhttp.send();
+            }else if(target=='/createAccount'){
+                var b = new Account(document.getElementById("newAccountNumber").value, 
+                            document.getElementById("newAccountShortName").value, 
+                            document.getElementById("newAccountLE").value);
+                sendRequest(target, xmlhttp, b);
+            }else if(target=='/createAccounts'){
+                var b = new Account("", "", "");
+                
+                b.accountNumber="Number"+id;
+                b.accountShortName="ShortName"+id;
+                b.accountLE="LE"+id;
+                id = id+1;
+                sendRequest(target, xmlhttp, b);
+
+            }else if(target=='/searchAccounts' || target=='/deleteAccounts'){
+                xmlhttp.open("POST", target, true);
+                xmlhttp.send();
+            }
+        }
+
+        function sendRequest(target, xmlhttp, account){
+                xmlhttp.open("POST", target, true);
+                xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                xmlhttp.send(JSON.stringify(account));
+        }
+
+        function createAccount(){
+            makeRequest('/createAccount');
+        }
+
+        function setMessageTimer(){
+            setTimeout(clearMessage, 2000);
+        }
+
+        function createAccounts(){
+            var size = parseInt(document.getElementById("newCount").value);
+            for(var i=0; i<size; i++){
+                makeRequest('/createAccounts');
+            }            
+        }
+
+        function deleteAccounts(){
+            makeRequest('/deleteAccounts');
+        }
+
+        function searchAccounts(){
+            makeRequest('/searchAccounts');
+        }
+
+        function clearMessage(){
+            document.getElementById('message').innerHTML="";
+        }
+
+    </script>
+    <hr/>
+  </body>
+</html>
