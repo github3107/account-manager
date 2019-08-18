@@ -19,7 +19,10 @@ app.route('/').get((req, res)=> {
 
 app.route('/accounts').get(function(req, res){
         MongoClient.connect(url, function(err, db) {
-            if (err) throw err;
+            if (err) {
+                console.log(err);
+                throw err;
+            }
             var dbo = db.db(DB_NAME);
             var query = { };
             dbo.collection("accounts").find(query).toArray(function(err, result) {
@@ -84,3 +87,6 @@ app.route('/searchAccounts').post((req, res)=>{
 var server = app.listen(SERVER_PORT, function() {});
 
 console.log("Ramesh, server started at "+SERVER_PORT);
+
+console.log("DB URL : "+url);
+console.log("DB NAME = "+DB_NAME);
